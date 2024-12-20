@@ -20,15 +20,27 @@ def project_points(points_3d: np.ndarray,
     """
 
     # [TODO] get image coordinates
-    homogeneous_2d  = K @ points_3d.T
+    num_points = points_3d.shape[1]
 
-    x_i = homogeneous_2d[0, :] / homogeneous_2d[2, :]
-    y_i = homogeneous_2d[1, :] / homogeneous_2d[2, :]
+    homogeneous_3d = np.vstack((points_3d, np.ones((1, num_points))))
+    homogeneous_2d = np.dot(K, homogeneous_3d[:3, :])
+    
+    x_c = homogeneous_2d[0, :]
+    y_c = homogeneous_2d[1, :]
+    z_c = homogeneous_2d[2, :]
 
-    image_coords = np.column_stack((x_i, y_i))
+    x_i = x_c/z_c
+    y_i = y_c/z_c
+
+    r_squared = x_i**2 + y_i**2
     
     # [TODO] apply distortion
     
-    projected_points = distort_points(image_coords, D, K) 
+    radial_distortion = 1 + D[0] * r_squared + D[1] * r_squared**2
+
+    x_distorted = x_i * radial_distortion
+    y_distorted = y_i * radial_distortion     
+
+    projected_points = np.vstack((x_distorted, y_distorted)).T
 
     return projected_points
